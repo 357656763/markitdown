@@ -73,8 +73,35 @@ class DocxConverter(HtmlConverter):
             )
 
         style_map = kwargs.get("style_map", None)
+        # Developers customize image processing
+        """
+            eg:
+            from mammoth.images import img_element
+            @img_element
+            def my_data_url(image):
+                bucket_name = os.getenv("Bucket_Name", None)
+                MINIO_URL = os.getenv("MINIO_URL", "127.0.0.1")
+                
+                with image.open() as image_bytes:
+                    object_path = image_bytes.name
+                    img_b = image_bytes.read()
+                    suffix_with_dot = os.path.splitext(object_path)[1]  # 结果：.jpeg
+                    object_name = hashlib.sha256(img_b).hexdigest() + suffix_with_dot
+                    print(len(img_b), object_name)
+                    minio_client.put_object(
+                        bucket_name=bucket_name,
+                        object_name=object_name,
+                        data=BytesIO(img_b),
+                        length=len(img_b)
+                    )
+                url = f"http://{MINIO_URL}/{bucket_name}/{object_name}"
+            return {  "src": url  }
+        """
+        convert_image = kwargs.get("convert_image", None)
+
         pre_process_stream = pre_process_docx(file_stream)
+        
         return self._html_converter.convert_string(
-            mammoth.convert_to_html(pre_process_stream, style_map=style_map).value,
+            mammoth.convert_to_html(pre_process_stream, style_map=style_map,convert_image=convert_image).value,
             **kwargs,
         )
